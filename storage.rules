@@ -1,0 +1,61 @@
+rules_version = '2';
+
+// Craft rules based on data in your Firestore database
+// allow write: if firestore.get(
+//    /databases/(default)/documents/users/$(request.auth.uid)).data.isAdmin;
+service firebase.storage {
+  match /b/{bucket}/o {
+    // Helper functions
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    function isAdmin() {
+      return isAuthenticated() && 
+        firestore.get(/databases/(default)/documents/users/$(request.auth.uid)).data.role == 'admin';
+    }
+    
+    function isCoach() {
+      return isAuthenticated() && 
+        firestore.get(/databases/(default)/documents/users/$(request.auth.uid)).data.role == 'coach';
+    }
+    
+    function isClient() {
+      return isAuthenticated() && 
+        firestore.get(/databases/(default)/documents/users/$(request.auth.uid)).data.role == 'client';
+    }
+    
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    // Profile images
+    match /users/{userId}/profile/{fileName} {
+      allow read: if isAuthenticated();
+      allow write: if isAuthenticated() && isOwner(userId);
+      allow delete: if isAuthenticated() && (isOwner(userId) || isAdmin());
+    }
+
+    // Check-in photos
+    match /check-ins/{checkInId}/photos/{fileName} {
+      allow read: if isAuthenticated() && (
+        isAdmin() || 
+        isOwner(resource.metadata.clientId) || 
+        firestore.get(/databases/(default)/documents/users/$(resource.metadata.clientId)).data.clientProfile.coachId == request.auth.uid
+      );
+      allow write: if isAuthenticated() && (
+        isAdmin() || 
+        isOwner(resource.metadata.clientId) || 
+        firestore.get(/databases/(default)/documents/users/$(resource.metadata.clientId)).data.clientProfile.coachId == request.auth.uid
+      );
+      allow delete: if isAuthenticated() && (isAdmin() || isOwner(resource.metadata.clientId));
+    }
+
+    // Organization assets
+    match /organizations/{orgId}/{fileName} {
+      allow read: if isAuthenticated();
+      allow write: if isAuthenticated() && isAdmin();
+      allow delete: if isAuthenticated() && isAdmin();
+    }
+  }
+}
