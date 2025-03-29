@@ -9,16 +9,19 @@ service cloud.firestore {
     
     function isAdmin() {
       return isAuthenticated() && 
+        exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
     }
     
     function isCoach() {
       return isAuthenticated() && 
+        exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'coach';
     }
     
     function isClient() {
       return isAuthenticated() && 
+        exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'client';
     }
     
@@ -28,6 +31,7 @@ service cloud.firestore {
     
     function isCoachOfClient(clientId) {
       return isCoach() && 
+        exists(/databases/$(database)/documents/users/$(clientId)) &&
         get(/databases/$(database)/documents/users/$(clientId)).data.clientProfile.coachId == request.auth.uid;
     }
 
@@ -57,6 +61,48 @@ service cloud.firestore {
       allow create: if isAuthenticated() && (isAdmin() || isCoach());
       allow update, delete: if isAuthenticated() && (isAdmin() || 
         (isCoach() && resource.data.createdBy == request.auth.uid));
+    }
+
+    // Sessions collection
+    match /sessions/{sessionId} {
+      allow read: if isAuthenticated() && (
+        isAdmin() || 
+        isCoachOfClient(resource.data.clientId) || 
+        isOwner(resource.data.clientId)
+      );
+      allow create: if isAuthenticated() && (
+        isAdmin() || 
+        isCoachOfClient(request.resource.data.clientId)
+      );
+      allow update: if isAuthenticated() && (
+        isAdmin() || 
+        isCoachOfClient(resource.data.clientId)
+      );
+      allow delete: if isAdmin();
+    }
+
+    // Activity collection
+    match /activity/{activityId} {
+      allow read: if isAuthenticated() && (
+        isAdmin() || 
+        isCoachOfClient(resource.data.clientId) || 
+        isOwner(resource.data.clientId)
+      );
+      allow create: if isAuthenticated() && (
+        isAdmin() || 
+        isCoachOfClient(request.resource.data.clientId)
+      );
+      allow update, delete: if isAdmin();
+    }
+
+    // Organization stats collection
+    match /organizationStats/{orgId} {
+      allow read: if isAuthenticated() && (
+        isAdmin() || 
+        exists(/databases/$(database)/documents/coaches/$(request.auth.uid)) &&
+        get(/databases/$(database)/documents/coaches/$(request.auth.uid)).data.organizationId == orgId
+      );
+      allow write: if isAdmin();
     }
 
     // Check-ins collection

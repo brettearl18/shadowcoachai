@@ -1,270 +1,251 @@
 'use client';
 
-import { useState } from 'react';
-import { 
-  ChartBarIcon, 
-  FireIcon, 
-  CalendarIcon, 
+import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+import {
+  ChartBarIcon,
   CheckCircleIcon,
-  ChatBubbleLeftIcon,
+  ExclamationTriangleIcon,
   ArrowTrendingUpIcon,
-  ArrowTrendingDownIcon,
-  TrophyIcon,
-  HeartIcon,
   StarIcon,
-  SparklesIcon,
-  PlusIcon
+  ArrowRightIcon,
+  ChatBubbleLeftRightIcon,
 } from '@heroicons/react/24/outline';
+import ProgressPhotos from './components/ProgressPhotos';
+
+interface DashboardData {
+  checkInRate: number;
+  currentStreak: number;
+  totalCheckIns: number;
+  lastCheckIn: string;
+  nextCheckIn: string;
+  recentActivity: {
+    type: string;
+    date: string;
+    description: string;
+  }[];
+}
 
 export default function ClientDashboard() {
-  const [timeRange, setTimeRange] = useState('week');
+  const router = useRouter();
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [dashboardData, setDashboardData] = useState<DashboardData | null>(null);
+
+  useEffect(() => {
+    // Simulate loading dashboard data
+    setTimeout(() => {
+      setDashboardData({
+        checkInRate: 92,
+        currentStreak: 7,
+        totalCheckIns: 28,
+        lastCheckIn: '2024-03-20T10:30:00Z',
+        nextCheckIn: '2024-03-22T10:00:00Z',
+        recentActivity: [
+          {
+            type: 'check-in',
+            date: '2024-03-20T10:30:00Z',
+            description: 'Submitted weekly check-in with progress photos',
+          },
+          {
+            type: 'message',
+            date: '2024-03-19T15:45:00Z',
+            description: 'Received feedback from coach on progress',
+          },
+        ],
+      });
+      setLoading(false);
+    }, 1000);
+  }, []);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-emerald-500"></div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-red-600">{error}</div>
+      </div>
+    );
+  }
 
   return (
-    <div className="p-8">
-      {/* Welcome & Motivation Section */}
-      <div className="mb-8">
-        <div className="flex justify-between items-start">
-          <div>
-            <h1 className="text-3xl font-bold text-gray-900">Welcome back, John!</h1>
-            <p className="text-gray-600 mt-2">Let's continue your journey to better health</p>
-          </div>
-          <div className="bg-gradient-to-r from-emerald-50 to-blue-50 p-4 rounded-lg">
-            <p className="text-lg font-medium text-gray-900">"Small progress is still progress"</p>
-            <p className="text-sm text-gray-600 mt-1">Daily Motivation</p>
-          </div>
-        </div>
-      </div>
-
-      {/* Progress Overview */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-        {/* Daily Streak */}
-        <div className="bg-white p-6 rounded-lg shadow">
-          <div className="flex items-center justify-between mb-4">
-            <div className="bg-orange-100 p-3 rounded-full">
-              <FireIcon className="h-6 w-6 text-orange-600" />
-            </div>
-            <span className="text-sm font-medium text-gray-500">Current Streak</span>
-          </div>
-          <h3 className="text-2xl font-bold text-gray-900">7 Days</h3>
-          <p className="text-sm text-gray-500">Personal Best: 14 Days</p>
-          <div className="mt-2">
-            <span className="text-emerald-600 text-sm font-medium">On Track!</span>
-          </div>
-        </div>
-
-        {/* Weight Progress */}
-        <div className="bg-white p-6 rounded-lg shadow">
-          <div className="flex items-center justify-between mb-4">
-            <div className="bg-blue-100 p-3 rounded-full">
-              <ChartBarIcon className="h-6 w-6 text-blue-600" />
-            </div>
-            <span className="text-sm font-medium text-gray-500">vs last week</span>
-          </div>
-          <h3 className="text-2xl font-bold text-gray-900">-2.5 kg</h3>
-          <p className="text-sm text-gray-500">Total Weight Loss</p>
-          <div className="mt-2 flex items-center">
-            <ArrowTrendingDownIcon className="h-4 w-4 text-emerald-600" />
-            <span className="text-emerald-600 text-sm font-medium ml-1">-0.5 kg this week</span>
-          </div>
-        </div>
-
-        {/* Goal Progress */}
-        <div className="bg-white p-6 rounded-lg shadow">
-          <div className="flex items-center justify-between mb-4">
-            <div className="bg-purple-100 p-3 rounded-full">
-              <TrophyIcon className="h-6 w-6 text-purple-600" />
-            </div>
-            <span className="text-sm font-medium text-gray-500">Overall Progress</span>
-          </div>
-          <h3 className="text-2xl font-bold text-gray-900">75%</h3>
-          <p className="text-sm text-gray-500">Goal Achievement</p>
-          <div className="mt-2">
-            <div className="w-full bg-gray-200 rounded-full h-2">
-              <div className="bg-purple-600 h-2 rounded-full" style={{ width: '75%' }}></div>
-            </div>
-          </div>
-        </div>
-
-        {/* Coach Support */}
-        <div className="bg-white p-6 rounded-lg shadow">
-          <div className="flex items-center justify-between mb-4">
-            <div className="bg-emerald-100 p-3 rounded-full">
-              <HeartIcon className="h-6 w-6 text-emerald-600" />
-            </div>
-            <span className="text-sm font-medium text-gray-500">Next Session</span>
-          </div>
-          <h3 className="text-2xl font-bold text-gray-900">Tomorrow</h3>
-          <p className="text-sm text-gray-500">2:00 PM - 3:00 PM</p>
-          <div className="mt-2">
-            <button className="text-emerald-600 text-sm font-medium hover:text-emerald-700">
-              View Details →
-            </button>
-          </div>
-        </div>
-      </div>
-
-      {/* Achievement Badges */}
-      <div className="mb-8">
-        <div className="flex justify-between items-center mb-4">
-          <h2 className="text-xl font-semibold text-gray-900">Recent Achievements</h2>
-          <button className="text-emerald-600 text-sm font-medium hover:text-emerald-700">
-            View All →
-          </button>
-        </div>
-        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
-          <div className="bg-white p-4 rounded-lg shadow text-center">
-            <div className="w-12 h-12 bg-yellow-100 rounded-full flex items-center justify-center mx-auto mb-2">
-              <StarIcon className="h-6 w-6 text-yellow-600" />
-            </div>
-            <p className="text-sm font-medium text-gray-900">7-Day Streak</p>
-            <p className="text-xs text-gray-500">Earned Today</p>
-          </div>
-          <div className="bg-white p-4 rounded-lg shadow text-center">
-            <div className="w-12 h-12 bg-purple-100 rounded-full flex items-center justify-center mx-auto mb-2">
-              <SparklesIcon className="h-6 w-6 text-purple-600" />
-            </div>
-            <p className="text-sm font-medium text-gray-900">First Goal</p>
-            <p className="text-xs text-gray-500">Earned This Week</p>
-          </div>
-          {/* Add more achievement badges */}
-        </div>
-      </div>
-
-      {/* Progress Charts */}
-      <div className="mb-8">
-        <div className="flex justify-between items-center mb-4">
-          <h2 className="text-xl font-semibold text-gray-900">Progress Tracking</h2>
-          <select 
-            className="px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500"
-            value={timeRange}
-            onChange={(e) => setTimeRange(e.target.value)}
-          >
-            <option value="week">Last 7 Days</option>
-            <option value="month">Last 30 Days</option>
-            <option value="quarter">Last Quarter</option>
-            <option value="year">Last Year</option>
-          </select>
-        </div>
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <div className="bg-white p-6 rounded-lg shadow">
-            <h3 className="text-lg font-medium text-gray-900 mb-4">Weight Progress</h3>
-            <div className="h-64 bg-gray-50 rounded-lg flex items-center justify-center">
-              <p className="text-gray-500">Weight progress chart will be displayed here</p>
-            </div>
-          </div>
-          <div className="bg-white p-6 rounded-lg shadow">
-            <h3 className="text-lg font-medium text-gray-900 mb-4">Workout Consistency</h3>
-            <div className="h-64 bg-gray-50 rounded-lg flex items-center justify-center">
-              <p className="text-gray-500">Workout consistency chart will be displayed here</p>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Goal Setting */}
-      <div className="mb-8">
-        <div className="flex justify-between items-center mb-4">
-          <h2 className="text-xl font-semibold text-gray-900">Current Goals</h2>
-          <button className="flex items-center text-emerald-600 hover:text-emerald-700">
-            <PlusIcon className="h-5 w-5 mr-1" />
-            <span className="text-sm font-medium">Add New Goal</span>
-          </button>
-        </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          <div className="bg-white p-6 rounded-lg shadow">
-            <div className="flex justify-between items-start mb-4">
-              <h3 className="text-lg font-medium text-gray-900">Weight Loss</h3>
-              <span className="px-2 py-1 text-xs font-medium bg-emerald-100 text-emerald-800 rounded">
-                On Track
-              </span>
-            </div>
-            <p className="text-sm text-gray-600 mb-4">Target: Lose 10kg by June 2024</p>
-            <div className="space-y-2">
-              <div className="flex justify-between text-sm">
-                <span className="text-gray-600">Progress</span>
-                <span className="font-medium text-gray-900">75%</span>
-              </div>
-              <div className="w-full bg-gray-200 rounded-full h-2">
-                <div className="bg-emerald-600 h-2 rounded-full" style={{ width: '75%' }}></div>
-              </div>
-            </div>
-          </div>
-          {/* Add more goal cards */}
-        </div>
-      </div>
-
-      {/* Quick Actions & Recent Activity */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Quick Actions */}
-        <div className="bg-white p-6 rounded-lg shadow">
-          <h2 className="text-xl font-semibold text-gray-900 mb-4">Quick Actions</h2>
-          <div className="grid grid-cols-2 gap-4">
-            <button className="p-4 bg-emerald-50 rounded-lg hover:bg-emerald-100 transition-colors">
-              <CheckCircleIcon className="h-6 w-6 text-emerald-600 mb-2" />
-              <p className="text-sm font-medium text-gray-900">Daily Check-in</p>
-            </button>
-            <button className="p-4 bg-blue-50 rounded-lg hover:bg-blue-100 transition-colors">
-              <CalendarIcon className="h-6 w-6 text-blue-600 mb-2" />
-              <p className="text-sm font-medium text-gray-900">Log Workout</p>
-            </button>
-            <button className="p-4 bg-purple-50 rounded-lg hover:bg-purple-100 transition-colors">
-              <ChatBubbleLeftIcon className="h-6 w-6 text-purple-600 mb-2" />
-              <p className="text-sm font-medium text-gray-900">Message Coach</p>
-            </button>
-            <button className="p-4 bg-orange-50 rounded-lg hover:bg-orange-100 transition-colors">
-              <ChartBarIcon className="h-6 w-6 text-orange-600 mb-2" />
-              <p className="text-sm font-medium text-gray-900">Track Progress</p>
+    <div className="min-h-screen bg-gray-50">
+      <div className="py-6">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex justify-between items-center">
+            <h1 className="text-3xl font-bold text-gray-900">Client Dashboard</h1>
+            <button
+              onClick={() => router.push('/client/check-in')}
+              className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-emerald-600 hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-emerald-500"
+            >
+              Submit Check-in
+              <ArrowRightIcon className="ml-2 h-5 w-5" />
             </button>
           </div>
         </div>
 
-        {/* Recent Activity */}
-        <div className="bg-white p-6 rounded-lg shadow">
-          <h2 className="text-xl font-semibold text-gray-900 mb-4">Recent Activity</h2>
-          <div className="space-y-4">
-            <div className="flex items-start space-x-4">
-              <div className="flex-shrink-0">
-                <div className="w-8 h-8 bg-emerald-100 rounded-full flex items-center justify-center">
-                  <CheckCircleIcon className="h-5 w-5 text-emerald-600" />
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 md:px-8">
+          {/* Stats Grid */}
+          <div className="mt-8 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
+            <div className="bg-white overflow-hidden shadow rounded-lg">
+              <div className="p-5">
+                <div className="flex items-center">
+                  <div className="flex-shrink-0">
+                    <CheckCircleIcon className="h-6 w-6 text-emerald-600" />
+                  </div>
+                  <div className="ml-5 w-0 flex-1">
+                    <dl>
+                      <dt className="text-sm font-medium text-gray-500 truncate">Check-in Rate</dt>
+                      <dd className="flex items-baseline">
+                        <div className="text-2xl font-semibold text-gray-900">
+                          {dashboardData?.checkInRate}%
+                        </div>
+                      </dd>
+                    </dl>
+                  </div>
                 </div>
               </div>
-              <div>
-                <p className="text-sm font-medium text-gray-900">Completed daily check-in</p>
-                <p className="text-sm text-gray-500">2 hours ago</p>
-              </div>
             </div>
-            <div className="flex items-start space-x-4">
-              <div className="flex-shrink-0">
-                <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
-                  <ChartBarIcon className="h-5 w-5 text-blue-600" />
+
+            <div className="bg-white overflow-hidden shadow rounded-lg">
+              <div className="p-5">
+                <div className="flex items-center">
+                  <div className="flex-shrink-0">
+                    <ArrowTrendingUpIcon className="h-6 w-6 text-emerald-600" />
+                  </div>
+                  <div className="ml-5 w-0 flex-1">
+                    <dl>
+                      <dt className="text-sm font-medium text-gray-500 truncate">Current Streak</dt>
+                      <dd className="flex items-baseline">
+                        <div className="text-2xl font-semibold text-gray-900">
+                          {dashboardData?.currentStreak} days
+                        </div>
+                      </dd>
+                    </dl>
+                  </div>
                 </div>
               </div>
-              <div>
-                <p className="text-sm font-medium text-gray-900">Logged 30-minute workout</p>
-                <p className="text-sm text-gray-500">5 hours ago</p>
-              </div>
             </div>
-            <div className="flex items-start space-x-4">
-              <div className="flex-shrink-0">
-                <div className="w-8 h-8 bg-purple-100 rounded-full flex items-center justify-center">
-                  <ChatBubbleLeftIcon className="h-5 w-5 text-purple-600" />
+
+            <div className="bg-white overflow-hidden shadow rounded-lg">
+              <div className="p-5">
+                <div className="flex items-center">
+                  <div className="flex-shrink-0">
+                    <ChartBarIcon className="h-6 w-6 text-emerald-600" />
+                  </div>
+                  <div className="ml-5 w-0 flex-1">
+                    <dl>
+                      <dt className="text-sm font-medium text-gray-500 truncate">Total Check-ins</dt>
+                      <dd className="flex items-baseline">
+                        <div className="text-2xl font-semibold text-gray-900">
+                          {dashboardData?.totalCheckIns}
+                        </div>
+                      </dd>
+                    </dl>
+                  </div>
                 </div>
               </div>
-              <div>
-                <p className="text-sm font-medium text-gray-900">Received coach feedback</p>
-                <p className="text-sm text-gray-500">1 day ago</p>
-              </div>
             </div>
-            <div className="flex items-start space-x-4">
-              <div className="flex-shrink-0">
-                <div className="w-8 h-8 bg-orange-100 rounded-full flex items-center justify-center">
-                  <TrophyIcon className="h-5 w-5 text-orange-600" />
+
+            <div className="bg-white overflow-hidden shadow rounded-lg">
+              <div className="p-5">
+                <div className="flex items-center">
+                  <div className="flex-shrink-0">
+                    <StarIcon className="h-6 w-6 text-emerald-600" />
+                  </div>
+                  <div className="ml-5 w-0 flex-1">
+                    <dl>
+                      <dt className="text-sm font-medium text-gray-500 truncate">Next Check-in</dt>
+                      <dd className="flex items-baseline">
+                        <div className="text-2xl font-semibold text-gray-900">
+                          {new Date(dashboardData?.nextCheckIn || '').toLocaleDateString()}
+                        </div>
+                      </dd>
+                    </dl>
+                  </div>
                 </div>
               </div>
-              <div>
-                <p className="text-sm font-medium text-gray-900">Achieved weekly goal</p>
-                <p className="text-sm text-gray-500">2 days ago</p>
+            </div>
+          </div>
+
+          {/* Recent Activity */}
+          <div className="mt-8">
+            <div className="bg-white shadow rounded-lg">
+              <div className="px-4 py-5 sm:px-6">
+                <h2 className="text-lg font-medium text-gray-900">Recent Activity</h2>
               </div>
+              <div className="border-t border-gray-200">
+                <ul className="divide-y divide-gray-200">
+                  {dashboardData?.recentActivity.map((activity, index) => (
+                    <li key={index} className="px-4 py-4 sm:px-6">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center">
+                          <div className="flex-shrink-0">
+                            {activity.type === 'check-in' ? (
+                              <CheckCircleIcon className="h-5 w-5 text-emerald-500" />
+                            ) : (
+                              <ExclamationTriangleIcon className="h-5 w-5 text-blue-500" />
+                            )}
+                          </div>
+                          <div className="ml-3">
+                            <p className="text-sm font-medium text-gray-900">{activity.description}</p>
+                            <p className="text-sm text-gray-500">
+                              {new Date(activity.date).toLocaleString()}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            </div>
+          </div>
+
+          {/* Progress Photos Section */}
+          <div className="mt-8">
+            <ProgressPhotos />
+          </div>
+
+          {/* Quick Actions */}
+          <div className="mt-8">
+            <h2 className="text-lg font-medium text-gray-900 mb-4">Quick Actions</h2>
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              <button
+                onClick={() => router.push('/client/check-in')}
+                className="bg-white p-6 rounded-lg shadow hover:shadow-md transition-shadow"
+              >
+                <div className="flex items-center">
+                  <CheckCircleIcon className="h-6 w-6 text-emerald-600 mr-3" />
+                  <span className="text-gray-900">Daily Check-in</span>
+                </div>
+              </button>
+
+              <button
+                onClick={() => router.push('/client/history')}
+                className="bg-white p-6 rounded-lg shadow hover:shadow-md transition-shadow"
+              >
+                <div className="flex items-center">
+                  <ChartBarIcon className="h-6 w-6 text-emerald-600 mr-3" />
+                  <span className="text-gray-900">Check-in History</span>
+                </div>
+              </button>
+
+              <button
+                onClick={() => router.push('/client/messages')}
+                className="bg-white p-6 rounded-lg shadow hover:shadow-md transition-shadow"
+              >
+                <div className="flex items-center">
+                  <ChatBubbleLeftRightIcon className="h-6 w-6 text-emerald-600 mr-3" />
+                  <span className="text-gray-900">Message Support</span>
+                </div>
+              </button>
             </div>
           </div>
         </div>
