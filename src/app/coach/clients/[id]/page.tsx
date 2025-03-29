@@ -11,6 +11,10 @@ import {
   ArrowLeftIcon,
 } from '@heroicons/react/24/outline';
 import ClientProgressPhotos from '../../dashboard/components/ClientProgressPhotos';
+import ProgressPhotoGallery from '@/components/ProgressPhotoGallery';
+import { CheckInService } from '@/services/checkInService';
+import ClientAnalytics from '@/components/ClientAnalytics';
+import { analyticsService } from '@/services/analyticsService';
 
 interface ClientProfile {
   id: string;
@@ -30,6 +34,30 @@ export default function ClientProfile({ params }: { params: { id: string } }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [client, setClient] = useState<ClientProfile | null>(null);
+  const [clientPhotos, setClientPhotos] = useState<Photo[]>([]);
+  const [progress, setProgress] = useState<ProgressMetrics | null>(null);
+
+  useEffect(() => {
+    const fetchClientData = async () => {
+      try {
+        // Fetch analytics data
+        const analyticsData = await analyticsService.getClientProgress(params.id);
+        setProgress(analyticsData);
+
+        // Fetch photos
+        const checkInService = new CheckInService();
+        const photos = await checkInService.getClientPhotos(params.id);
+        setClientPhotos(photos);
+      } catch (error) {
+        console.error('Error fetching client data:', error);
+        setError('Failed to load client data');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchClientData();
+  }, [params.id]);
 
   useEffect(() => {
     // Simulate loading client data
@@ -46,7 +74,6 @@ export default function ClientProfile({ params }: { params: { id: string } }) {
         lastCheckIn: '2024-03-20T10:30:00Z',
         status: 'active'
       });
-      setLoading(false);
     }, 1000);
   }, [params.id]);
 
@@ -187,8 +214,35 @@ export default function ClientProfile({ params }: { params: { id: string } }) {
           </div>
 
           {/* Progress Photos */}
-          <div className="mb-6">
-            <ClientProgressPhotos clientId={client.id} clientName={client.name} />
+          <div className="mt-8">
+            <h2 className="text-2xl font-bold mb-4">Progress Photos</h2>
+            {loading ? (
+              <div className="flex justify-center items-center h-64">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
+              </div>
+            ) : clientPhotos.length > 0 ? (
+              <ProgressPhotoGallery photos={clientPhotos} />
+            ) : (
+              <div className="text-center text-gray-500 py-8">
+                No progress photos available
+              </div>
+            )}
+          </div>
+
+          {/* Analytics & Insights */}
+          <div className="mt-8">
+            <h2 className="text-2xl font-bold mb-4">Analytics & Insights</h2>
+            {loading ? (
+              <div className="flex justify-center items-center h-64">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
+              </div>
+            ) : progress ? (
+              <ClientAnalytics progress={progress} />
+            ) : (
+              <div className="text-center text-gray-500 py-8">
+                No analytics data available
+              </div>
+            )}
           </div>
 
           {/* Quick Actions */}

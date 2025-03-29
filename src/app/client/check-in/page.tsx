@@ -8,8 +8,9 @@ import {
   ArrowUpTrayIcon,
   CheckCircleIcon,
 } from '@heroicons/react/24/outline';
-import { checkInService, CheckInData } from '@/services/checkInService';
+import { checkInService, CheckInData, PhotoUpload } from '@/services/checkInService';
 import CheckInQuestionnaire from '@/components/CheckInQuestionnaire';
+import ProgressPhotoGallery from '@/components/ProgressPhotoGallery';
 
 export default function CheckIn() {
   const router = useRouter();
@@ -35,6 +36,8 @@ export default function CheckIn() {
       side: null,
     },
   });
+  const [photos, setPhotos] = useState<PhotoUpload[]>([]);
+  const [existingPhotos, setExistingPhotos] = useState<Photo[]>([]);
 
   const fileInputRefs = {
     front: useRef<HTMLInputElement>(null),
@@ -60,16 +63,27 @@ export default function CheckIn() {
     fetchWeekNumber();
   }, []);
 
-  const handlePhotoUpload = (type: 'front' | 'back' | 'side', event: React.ChangeEvent<HTMLInputElement>) => {
+  useEffect(() => {
+    const fetchExistingPhotos = async () => {
+      try {
+        const photos = await checkInService.getClientPhotos('mock-client-id'); // Replace with actual client ID
+        setExistingPhotos(photos);
+      } catch (error) {
+        console.error('Error fetching photos:', error);
+      }
+    };
+
+    fetchExistingPhotos();
+  }, []);
+
+  const handlePhotoUpload = (event: React.ChangeEvent<HTMLInputElement>, type: 'front' | 'side' | 'back') => {
     const file = event.target.files?.[0];
     if (file) {
-      setCheckInData(prev => ({
-        ...prev,
-        photos: {
-          ...prev.photos,
-          [type]: file,
-        },
-      }));
+      setPhotos(prev => {
+        // Remove existing photo of the same type
+        const filtered = prev.filter(p => p.type !== type);
+        return [...filtered, { file, type }];
+      });
     }
   };
 
@@ -112,11 +126,14 @@ export default function CheckIn() {
       // Create client if doesn't exist
       await checkInService.ensureClientExists(clientId);
       
-      await checkInService.submitCheckIn(clientId, {
-        ...checkInData,
+      const checkInData: CheckInData = {
+        ...this.checkInData,
         questionnaireAnswers,
         weekNumber,
-      });
+        photos,
+      };
+      
+      await checkInService.submitCheckIn(clientId, checkInData);
       
       setSuccess(true);
       setTimeout(() => {
@@ -153,41 +170,29 @@ export default function CheckIn() {
             ) : (
               <form onSubmit={handleSubmit} className="space-y-6">
                 {/* Progress Photos Section */}
-                <div>
-                  <h2 className="text-lg font-medium text-gray-900 mb-4">Progress Photos</h2>
-                  <div className="grid grid-cols-1 gap-6 sm:grid-cols-3">
-                    {(['front', 'back', 'side'] as const).map((type) => (
-                      <div key={type} className="relative">
-                        <div className="aspect-w-3 aspect-h-4 rounded-lg overflow-hidden bg-gray-100">
-                          {checkInData.photos[type] ? (
-                            <img
-                              src={URL.createObjectURL(checkInData.photos[type]!)}
-                              alt={`${type} view`}
-                              className="object-cover"
+                <div className="mb-8">
+                  <h2 className="text-xl font-semibold mb-4">Progress Photos</h2>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    {['front', 'side', 'back'].map((type) => (
+                      <div key={type} className="flex flex-col items-center">
+                        <label className="w-full">
+                          <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center cursor-pointer hover:border-blue-500">
+                            <input
+                              type="file"
+                              accept="image/*"
+                              className="hidden"
+                              onChange={(e) => handlePhotoUpload(e, type as 'front' | 'side' | 'back')}
                             />
-                          ) : (
-                            <div className="flex items-center justify-center h-full">
-                              <PhotoIcon className="h-12 w-12 text-gray-400" />
+                            <div className="text-sm text-gray-600">
+                              {photos.find(p => p.type === type)
+                                ? 'Change photo'
+                                : `Upload ${type} view photo`}
                             </div>
-                          )}
-                        </div>
-                        <div className="mt-2">
-                          <input
-                            type="file"
-                            ref={fileInputRefs[type]}
-                            onChange={(e) => handlePhotoUpload(type, e)}
-                            accept="image/*"
-                            className="hidden"
-                          />
-                          <button
-                            type="button"
-                            onClick={() => fileInputRefs[type].current?.click()}
-                            className="w-full flex items-center justify-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-emerald-500"
-                          >
-                            <CameraIcon className="h-5 w-5 mr-2" />
-                            {checkInData.photos[type] ? 'Change Photo' : 'Upload Photo'}
-                          </button>
-                        </div>
+                          </div>
+                        </label>
+                        {photos.find(p => p.type === type) && (
+                          <div className="mt-2 text-sm text-green-600">Photo selected</div>
+                        )}
                       </div>
                     ))}
                   </div>

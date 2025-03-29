@@ -14,6 +14,11 @@ import {
   limit 
 } from 'firebase/firestore';
 
+export interface PhotoUpload {
+  file: File;
+  type: 'front' | 'side' | 'back';
+}
+
 export interface CheckInData {
   weight: string;
   measurements: {
@@ -24,11 +29,7 @@ export interface CheckInData {
     legs: string;
   };
   notes: string;
-  photos: {
-    front: File | null;
-    back: File | null;
-    side: File | null;
-  };
+  photos: PhotoUpload[];
   questionnaireAnswers?: Record<number, number>;
   weekNumber?: number;
   rating?: 'red' | 'orange' | 'green';
@@ -46,10 +47,10 @@ export interface CheckInSubmission {
   };
   notes: string;
   photos: {
-    front: string;
-    back: string;
-    side: string;
-  };
+    url: string;
+    type: 'front' | 'side' | 'back';
+    date: Date;
+  }[];
   questionnaireAnswers?: Record<number, number>;
   weekNumber: number;
   timestamp: Date;
@@ -165,25 +166,27 @@ class CheckInService {
     }
   }
 
-  private async uploadPhotos(clientId: string, photos: CheckInData['photos']): Promise<{ front: string; back: string; side: string }> {
-    const photoUrls: { front: string; back: string; side: string } = {
-      front: '',
-      back: '',
-      side: '',
-    };
+  private async uploadPhotos(clientId: string, photos: PhotoUpload[]): Promise<{ url: string; type: string; date: Date; }[]> {
+    if (!photos || photos.length === 0) return [];
 
-    for (const [type, file] of Object.entries(photos)) {
-      if (file) {
-        const timestamp = new Date().getTime();
-        const storageRef = ref(storage, `check-ins/${clientId}/${type}_${timestamp}`);
-        
-        await uploadBytes(storageRef, file);
-        const url = await getDownloadURL(storageRef);
-        photoUrls[type as keyof typeof photoUrls] = url;
-      }
-    }
+    const uploadPromises = photos.map(async (photo) => {
+      const fileName = `${clientId}/${Date.now()}_${photo.type}.jpg`;
+      const storageRef = ref(storage, `progress-photos/${fileName}`);
+      
+      // Upload the file
+      await uploadBytes(storageRef, photo.file);
+      
+      // Get the download URL
+      const url = await getDownloadURL(storageRef);
+      
+      return {
+        url,
+        type: photo.type,
+        date: new Date()
+      };
+    });
 
-    return photoUrls;
+    return Promise.all(uploadPromises);
   }
 
   private async updateClientStats(clientId: string, checkInData: CheckInSubmission): Promise<void> {
@@ -225,6 +228,39 @@ class CheckInService {
     // For now, use a simple calculation
     // In a real implementation, you'd want to count actual check-ins in the last 30 days
     return Math.min(100, (totalCheckIns / 30) * 100);
+  }
+
+  async getClientPhotos(clientId: string): Promise<Photo[]> {
+    try {
+      const photosRef = collection(db, 'check-ins');
+      const q = query(
+        photosRef,
+        where('clientId', '==', clientId),
+        orderBy('timestamp', 'desc')
+      );
+
+      const querySnapshot = await getDocs(q);
+      const photos: Photo[] = [];
+
+      querySnapshot.forEach((doc) => {
+        const data = doc.data();
+        if (data.photos && Array.isArray(data.photos)) {
+          data.photos.forEach((photo: any) => {
+            photos.push({
+              url: photo.url,
+              type: photo.type,
+              date: photo.date.toDate(),
+              weekNumber: data.weekNumber
+            });
+          });
+        }
+      });
+
+      return photos;
+    } catch (error) {
+      console.error('Error fetching client photos:', error);
+      throw new Error('Failed to fetch client photos');
+    }
   }
 }
 
